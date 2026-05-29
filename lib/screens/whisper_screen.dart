@@ -6,6 +6,7 @@ import 'package:scrumlab_flutter_tindercard/scrumlab_flutter_tindercard.dart';
 
 import '../models/confession.dart';
 import 'add_confession_screen.dart';
+import 'profile_screen.dart';
 
 class WhisperScreen extends StatefulWidget {
   const WhisperScreen({super.key});
@@ -16,17 +17,6 @@ class WhisperScreen extends StatefulWidget {
 
 class _WhisperState extends State<WhisperScreen> {
   final cardController = CardController();
-
-  final List<Color> colors = [
-    const Color(0xFF2D1B69),
-    const Color(0xFF0F4C5C),
-    const Color(0xFF1B4332),
-    const Color(0xFF6A040F),
-    const Color(0xFF3A0CA3),
-    const Color(0xFF005F73),
-    const Color(0xFF9D0208),
-    const Color(0xFF3D348B),
-  ];
 
   List<Confession> confessions = [];
   bool loading = true;
@@ -85,18 +75,10 @@ class _WhisperState extends State<WhisperScreen> {
         .limit(50)
         .get();
 
-    return snapshot.docs.where((doc) => !seenIds.contains(doc.id)).map((doc) {
-      final data = doc.data();
-
-      return Confession(
-        id: doc.id,
-        text: data['text'] ?? '',
-        likes: data['likes'] ?? 0,
-        dislikes: data['dislikes'] ?? 0,
-        authorId: data['authorId'] ?? '',
-        color: colors[doc.id.hashCode.abs() % colors.length],
-      );
-    }).toList();
+    return snapshot.docs
+        .where((doc) => !seenIds.contains(doc.id))
+        .map(Confession.fromFirestore)
+        .toList();
   }
 
   Future<void> interactWithConfession(
@@ -211,6 +193,12 @@ class _WhisperState extends State<WhisperScreen> {
     }
   }
 
+  void openProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
+    );
+  }
+
   Widget buildConfessionCard(Confession confession) {
     return Container(
       decoration: BoxDecoration(
@@ -238,11 +226,6 @@ class _WhisperState extends State<WhisperScreen> {
               ),
             ),
           ),
-
-
-
-
-
           Positioned(
             bottom: 0,
             left: 0,
@@ -430,7 +413,12 @@ class _WhisperState extends State<WhisperScreen> {
                     child: _isDraggingManually
                         ? Transform(
                             transform: Matrix4.identity()
-                              ..translate(_manualDrag.dx, _manualDrag.dy * 0.3)
+                              ..translateByDouble(
+                                _manualDrag.dx,
+                                _manualDrag.dy * 0.3,
+                                0,
+                                1,
+                              )
                               ..rotateZ(_manualDrag.dx * 0.0007),
                             alignment: Alignment.center,
                             child: SizedBox(
@@ -471,7 +459,7 @@ class _WhisperState extends State<WhisperScreen> {
                       CardSwipeOrientation orientation,
                       int index,
                     ) {
-handleSwipe(orientation, index);
+                      handleSwipe(orientation, index);
 
                       if (index == confessions.length - 1) {
                         Future.delayed(
@@ -533,13 +521,12 @@ handleSwipe(orientation, index);
           Padding(
             padding: const EdgeInsets.only(right: 18),
             child: Center(
-              child: GestureDetector(
-                onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                },
-                child: const Icon(
-                  Icons.logout,
-                  color: Color(0xFFf87171),
+              child: IconButton(
+                onPressed: openProfile,
+                tooltip: 'Your confessions',
+                icon: Icon(
+                  Icons.article_outlined,
+                  color: Colors.white.withValues(alpha: 0.28),
                   size: 22,
                 ),
               ),
